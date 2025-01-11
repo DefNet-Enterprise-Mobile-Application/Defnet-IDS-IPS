@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Percorso al file Python (ad esempio /home/udm-root/OpenWRT-IDS-IPS/main.py)
-SERVICE_SCRIPT="/home/udm-root/OpenWRT-IDS-IPS/main.py"
+SERVICE_SCRIPT="/home/udm-root/Progetti/OpenWRT-IDS-IPS/main.py"
 LOG_FILE="/tmp/openwrt-ids-ips.log"  # File di log
 SERVICE_PID_FILE="/tmp/openwrt-ids-ips.pid"  # File per memorizzare il PID
 
@@ -28,6 +28,7 @@ start_service() {
     sudo python3 "$SERVICE_SCRIPT" -i eth0 start >> "$LOG_FILE" 2>&1 &
     echo $! > "$SERVICE_PID_FILE"  # Salva il PID del processo
     echo "Servizio avviato in background. I log sono disponibili in $LOG_FILE."
+    echo "Se vuoi seguire il traffico di rete digita tail -f /tmp/openwrt-ids-ips.log"
 }
 
 stop_service() {

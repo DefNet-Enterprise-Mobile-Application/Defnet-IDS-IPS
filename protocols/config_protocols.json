@@ -1,0 +1,19 @@
+{
+    "protocols": [
+      "IP",
+      "TCP",
+      "UDP",
+      "ICMP",
+      "HTTP",
+      "HTTPS",
+      "DNS",
+      "FTP",
+      "SMTP",
+      "SSH",
+      "TELNET",
+      "BGP",
+      "SNMP",
+      "SIP"
+    ]
+  }
+  
