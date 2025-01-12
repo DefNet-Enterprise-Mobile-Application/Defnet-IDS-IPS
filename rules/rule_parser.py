@@ -8,7 +8,7 @@ class RuleParser:
         Inizializza il parser con il percorso del file di configurazione e il RuleManager.
 
         Args:
-            config_file (str): Il percorso al file JSON che contiene le regole.
+            rules_config_file (str): Il percorso al file JSON che contiene le regole.
             rule_manager (RuleManager): Oggetto RuleManager per aggiungere le regole ai RadixTree.
         """
         self.config_file = rules_config_file
@@ -30,8 +30,12 @@ class RuleParser:
                     src_port = rule_data.get("src_port", "any")
                     dst_port = rule_data.get("dst_port", "any")
                     direction = rule_data.get("direction", "both")  # Aggiungi la gestione del parametro direction
+                    
+                    # Estrai flag e threshold, assegna valori di default se assenti
+                    flags = rule_data.get("flags", [])
+                    threshold = rule_data.get("threshold", {"count": 1, "time": 10})
 
-                    # Crea un oggetto Rule con il parametro direction
+                    # Crea un oggetto Rule con il parametro direction, flags e threshold
                     rule = Rule(
                         rule_data["rule_id"],
                         rule_data["protocol"],
@@ -41,7 +45,9 @@ class RuleParser:
                         dst_port,
                         rule_data.get("action"),
                         rule_data.get("description"),
-                        direction  # Passa la direzione alla regola
+                        direction,  # Passa la direzione alla regola
+                        flags,      # Passa i flags alla regola
+                        threshold   # Passa il threshold alla regola
                     )
 
                     # Aggiungi la regola al RuleManager

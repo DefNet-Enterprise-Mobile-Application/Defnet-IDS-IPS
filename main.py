@@ -66,7 +66,6 @@ if __name__ == "__main__":
 
     # Inizializzazione del service manager con la configurazione
     service_manager = ServiceManager(interface, config_file)
-    logging.info("Ho inizializzato il ServiceManager!")
 
     if args.command == "start":
         # Svuota o crea il file di log

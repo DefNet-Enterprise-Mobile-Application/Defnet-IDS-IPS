@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 from scapy.layers.inet import IP
 from scapy.layers.inet6 import IPv6
@@ -22,6 +23,7 @@ class PacketAnalyzer:
         self.rule_manager = rule_manager
         self.config_service = ConfigService(config_dir)  # Inizializza ConfigService
         self.home_net = ipaddress.IPv4Network(home_net)  # Converte l'IP in un oggetto di rete
+        self.packet_history = defaultdict(list)  # Crea un dizionario per la cronologia dei pacchetti
         logging.debug(f"RuleManager type: {type(self.rule_manager)}")
 
     def analyze_packet(self, packet):
@@ -71,7 +73,7 @@ class PacketAnalyzer:
                     logging.debug(f"Direzione corrispondente per la regola {rule} con il pacchetto {packet.summary()}")
 
                 # Procedi a verificare e applicare la regola se c'è una corrispondenza
-                if Rule.match_rule(rule,packet):
+                if Rule.match_rule(rule, packet, self.packet_history):
                     # Verifica se l'IP rientra in HOME_NET o EXTERNAL_NET
                     if self.is_home_net(ip_layer.src) and rule.src_ip != "any":
                         logging.debug(f"Pacchetto {packet.summary()} corrisponde a HOME_NET.")

@@ -8,7 +8,6 @@ class RuleManager:
         Inizializza il RuleManager e carica i protocolli da un file di configurazione.
         :param protocol_config_file: Percorso al file di configurazione dei protocolli.
         """
-        logging.info("Sono qui per poter caricare i protocolli !")
         self.protocol_rules = {}  # Dizionario che conterrà un RadixTree per ogni protocollo
         self.load_protocols(protocol_config_file)
 
