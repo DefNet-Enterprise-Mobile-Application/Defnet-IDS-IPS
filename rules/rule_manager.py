@@ -8,12 +8,14 @@ class RuleManager:
         Inizializza il RuleManager e carica i protocolli da un file di configurazione.
         :param protocol_config_file: Percorso al file di configurazione dei protocolli.
         """
+        logging.info("Sono qui per poter caricare i protocolli !")
         self.protocol_rules = {}  # Dizionario che conterrà un RadixTree per ogni protocollo
         self.load_protocols(protocol_config_file)
 
-    def load_protocols(self, config_file):
+    def load_protocols(self, protocol_config_file):
+        logging.info("Sto per caricare i protocolli : ")
         try:
-            with open(config_file, "r") as f:
+            with open(protocol_config_file, "r") as f:
                 data = json.load(f)
                 protocols = data.get("protocols", [])  # Lista di protocolli nel file JSON
                 logging.debug(f"Protocollo trovati nel file di configurazione: {protocols}")
@@ -23,7 +25,7 @@ class RuleManager:
                     logging.info(f"Protocollo {protocol} aggiunto con RadixTree.")
 
         except FileNotFoundError:
-            logging.error(f"File di configurazione {config_file} non trovato.")
+            logging.error(f"File di configurazione {protocol_config_file} non trovato.")
         except json.JSONDecodeError as e:
             logging.error(f"Errore nella lettura del file JSON: {e}")
         except Exception as e:

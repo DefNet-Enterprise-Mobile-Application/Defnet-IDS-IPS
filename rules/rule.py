@@ -1,3 +1,6 @@
+import logging
+
+
 class Rule:
     def __init__(self, rule_id, protocol, src_ip, dst_ip, src_port, dst_port, action, description, direction="both"):
         """
@@ -24,35 +27,80 @@ class Rule:
     def __repr__(self):
         return f"Rule({self.rule_id}, {self.protocol}, {self.src_ip}, {self.dst_ip}, {self.src_port}, {self.dst_port}, {self.action}, {self.direction})"
 
-    def matches(self, packet):
+    @staticmethod
+    def match_rule(rule, packet):
         """
-        Verifica se la regola si applica a un dato pacchetto.
+        Verifica se una regola si applica a un dato pacchetto.
+        :param rule: La regola che si desidera confrontare.
         :param packet: Il pacchetto che si desidera confrontare.
         :return: True se la regola si applica al pacchetto, False altrimenti.
         """
-        # Verifica IP sorgente
-        if self.src_ip != "any" and packet["IP"].src != self.src_ip:
+        try:
+            logging.debug(f"Verifica match per la regola: {rule} con il pacchetto: {packet.summary()}")
+
+            # Verifica IP sorgente
+            if rule.src_ip != "any":
+                if packet["IP"].src != rule.src_ip:
+                    logging.debug(f"Il src_ip del pacchetto {packet['IP'].src} non corrisponde alla regola src_ip {rule.src_ip}")
+                    return False
+                else:
+                    logging.debug(f"Il src_ip del pacchetto {packet['IP'].src} corrisponde alla regola src_ip {rule.src_ip}")
+
+            # Verifica IP destinazione
+            if rule.dst_ip != "any":
+                if packet["IP"].dst != rule.dst_ip:
+                    logging.debug(f"Il dst_ip del pacchetto {packet['IP'].dst} non corrisponde alla regola dst_ip {rule.dst_ip}")
+                    return False
+                else:
+                    logging.debug(f"Il dst_ip del pacchetto {packet['IP'].dst} corrisponde alla regola dst_ip {rule.dst_ip}")
+
+            # Verifica porta sorgente
+            if rule.src_port != "any" and packet.haslayer("TCP"):
+                if packet["TCP"].sport != rule.src_port:
+                    logging.debug(f"La src_port del pacchetto {packet['TCP'].sport} non corrisponde alla regola src_port {rule.src_port}")
+                    return False
+                else:
+                    logging.debug(f"La src_port del pacchetto {packet['TCP'].sport} corrisponde alla regola src_port {rule.src_port}")
+
+            # Verifica porta destinazione
+            if rule.dst_port != "any" and packet.haslayer("TCP"):
+                if packet["TCP"].dport != rule.dst_port:
+                    logging.debug(f"La dst_port del pacchetto {packet['TCP'].dport} non corrisponde alla regola dst_port {rule.dst_port}")
+                    return False
+                else:
+                    logging.debug(f"La dst_port del pacchetto {packet['TCP'].dport} corrisponde alla regola dst_port {rule.dst_port}")
+
+            # Verifica la direzione
+            if rule.direction == "in":
+                if rule.src_ip == "any":
+                    logging.debug(f"La direzione 'in' non corrisponde: il dst_ip del pacchetto {packet['IP'].dst} non è uguale a src_ip della regola {rule.src_ip}")
+                    return True
+                elif packet["IP"].dst != rule.src_ip:
+                    logging.debug(f"La direzione 'in' corrisponde: il dst_ip del pacchetto {packet['IP'].dst} ma è uguale a src_ip della regola {rule.src_ip}")
+                    return False
+                else:
+                    logging.debug(f"La direzione 'in' corrisponde: il dst_ip del pacchetto {packet['IP'].dst} è uguale a src_ip della regola {rule.src_ip}")
+
+            elif rule.direction == "out":
+                if rule.src_ip == "any":
+                    logging.debug(f"La direzione 'out' non corrisponde: il src_ip del pacchetto {packet['IP'].src} non è uguale a src_ip della regola {rule.src_ip}")
+                    return True
+                elif packet["IP"].src != rule.src_ip:
+                    logging.debug(f"La direzione 'out' corrisponde: il src_ip del pacchetto {packet['IP'].src} ma è uguale a src_ip della regola {rule.src_ip}")
+                    return False
+                else:
+                    logging.debug(f"La direzione 'out' corrisponde: il src_ip del pacchetto {packet['IP'].src} è uguale a src_ip della regola {rule.src_ip}")
+
+            elif rule.direction == "both":
+                logging.debug(f"Direzione 'both': il traffico è accettato in entrambe le direzioni per la regola {rule}")
+
+            else:
+                logging.debug(f"Direzione non riconosciuta: {rule.direction}")
+                return False
+
+            logging.debug("La regola corrisponde al pacchetto.")
+            return True
+
+        except Exception as e:
+            logging.error(f"Errore durante il confronto della regola: {e}")
             return False
-        # Verifica IP destinazione
-        if self.dst_ip != "any" and packet["IP"].dst != self.dst_ip:
-            return False
-        # Verifica porta sorgente
-        if self.src_port != "any" and packet.haslayer("TCP") and packet["TCP"].sport != self.src_port:
-            return False
-        # Verifica porta destinazione
-        if self.dst_port != "any" and packet.haslayer("TCP") and packet["TCP"].dport != self.dst_port:
-            return False
-        
-        # Verifica la direzione
-        if self.direction == "in" and packet["IP"].dst != self.src_ip:
-            return False
-        elif self.direction == "out" and packet["IP"].src != self.src_ip:
-            return False
-        elif self.direction == "both":
-            # Il traffico bidirezionale è valido in entrambe le direzioni
-            pass
-        else:
-            # Gestione della direzione non riconosciuta
-            return False
-        
-        return True

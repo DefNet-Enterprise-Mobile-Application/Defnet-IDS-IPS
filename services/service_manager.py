@@ -6,6 +6,7 @@ from services.packet_sniffer import PacketSniffer
 from services.packet_analyzer import PacketAnalyzer
 from rules.rule_manager import RuleManager
 from rules.rule_parser import RuleParser
+from core.utils import DEFAULT_PROTOCOL_CONFIG, DEFAULT_RULES_CONFIG
 from core.utils import setup_logging
 
 class ServiceManager:
@@ -21,7 +22,7 @@ class ServiceManager:
         analyzer (PacketAnalyzer): Componente per l'analisi dei pacchetti.
         stop_event (Event): Evento per coordinare l'arresto dei thread.
     """
-    def __init__(self, interface, config_file="./rules/config_rules.json", protocol_config="./protocols/config_protocols.json"):
+    def __init__(self, interface, rules_config_file=None, protocol_config_file=None):
         """
         Inizializza il ServiceManager con l'interfaccia di rete e il file di configurazione delle regole.
 
@@ -29,24 +30,42 @@ class ServiceManager:
             interface (str): Interfaccia di rete su cui operare (es. eth0, wlan0).
             config_file (str): Percorso al file di configurazione delle regole (default: "config_rules.json").
         """
-        setup_logging()  # Imposta il logging
         self.interface = interface
-        self.config_file = config_file
-        self.packet_queue = Queue(maxsize=100)
+        
+        self.rules_config_file = rules_config_file or DEFAULT_RULES_CONFIG
+        
+        self.protocol_config_file = protocol_config_file or DEFAULT_PROTOCOL_CONFIG # File Path base per la configurazione dei protocolli 
+
+        self.packet_queue = Queue(maxsize=1000)
+        
         self.stop_event = Event()  # Evento per fermare i thread
 
-
         # Inizializza RuleManager
-        rule_manager = RuleManager(protocol_config)  # Crea un'istanza di RuleManager
+        rule_manager = RuleManager(
+            protocol_config_file=self.protocol_config_file
+        )  # Crea un'istanza di RuleManager
+
 
         # Caricamento delle regole
-        rule_parser = RuleParser(config_file, rule_manager)
+        rule_parser = RuleParser(
+            rules_config_file=self.rules_config_file,
+            rule_manager=rule_manager
+        ) # Creiamo un'istanza del RuleParser
+
         rule_parser.parse()
         self.rules = rule_parser.rules
 
         # Inizializza i componenti sniffer e analyzer con le regole caricate
-        self.sniffer = PacketSniffer(interface, self.packet_queue)
-        self.analyzer = PacketAnalyzer(self.packet_queue, rule_manager)
+        self.sniffer = PacketSniffer(
+            interface,
+            self.packet_queue
+        ) # Creaimo un'istanza del Packet Sniffer 
+
+        self.analyzer = PacketAnalyzer(
+            self.packet_queue,
+            rule_manager,
+            config_dir="./configuration"
+        ) # Creiamo un'istanza del Packet Analyzer 
 
     def handle_termination_signal(self, signal, frame):
         """
@@ -56,7 +75,7 @@ class ServiceManager:
             signal (int): Segnale ricevuto.
             frame (FrameType): Frame corrente (non utilizzato).
         """
-        logging.info("Ricevuto segnale di terminazione. Arresto del servizio...")
+        logging.debug("Ricevuto segnale di terminazione. Arresto del servizio...")
         self.stop_event.set()  # Imposta l'evento per fermare i thread
 
     def start(self):
@@ -69,7 +88,9 @@ class ServiceManager:
 
         Inoltre, si occupa della gestione dei segnali di terminazione.
         """
-        logging.info(f"Avvio del servizio sull'interfaccia {self.interface} con il file di configurazione {self.config_file}")
+        logging.info("Sono qui! sul serviceManager !")
+        logging.info(f"Le regole parsate : {self.rules}")
+        logging.debug(f"Avvio del servizio sull'interfaccia {self.interface} con il file di configurazione {self.rules_config_file}")
 
         # Gestione dei segnali di terminazione
         signal.signal(signal.SIGTERM, self.handle_termination_signal)
@@ -94,5 +115,5 @@ class ServiceManager:
         """
         Arresta il servizio impostando l'evento di stop per tutti i componenti.
         """
-        logging.info("Arresto del servizio...")
+        logging.debug("Arresto del servizio...")
         self.stop_event.set()

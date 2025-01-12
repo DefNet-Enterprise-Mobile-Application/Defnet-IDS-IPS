@@ -3,7 +3,7 @@ import logging
 from rules.rule import Rule
 
 class RuleParser:
-    def __init__(self, config_file, rule_manager):
+    def __init__(self, rules_config_file, rule_manager):
         """
         Inizializza il parser con il percorso del file di configurazione e il RuleManager.
 
@@ -11,7 +11,7 @@ class RuleParser:
             config_file (str): Il percorso al file JSON che contiene le regole.
             rule_manager (RuleManager): Oggetto RuleManager per aggiungere le regole ai RadixTree.
         """
-        self.config_file = config_file
+        self.config_file = rules_config_file
         self.rule_manager = rule_manager
         self.rules = []
 

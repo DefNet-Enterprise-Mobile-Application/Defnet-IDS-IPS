@@ -5,7 +5,23 @@ SERVICE_SCRIPT="/home/udm-root/Progetti/OpenWRT-IDS-IPS/main.py"
 LOG_FILE="/tmp/openwrt-ids-ips.log"  # File di log
 SERVICE_PID_FILE="/tmp/openwrt-ids-ips.pid"  # File per memorizzare il PID
 
+# Imposta un'interfaccia di rete predefinita (modifica se necessario)
+DEFAULT_INTERFACE="eth0"
+
+# Funzione per gestire gli argomenti passati allo script
+get_interface() {
+    # Se l'utente ha passato un argomento per -i, usalo, altrimenti usa il valore di default
+    INTERFACE="$1"
+    if [ -z "$INTERFACE" ]; then
+        INTERFACE="$DEFAULT_INTERFACE"
+    fi
+    echo "$INTERFACE"
+}
+
 start_service() {
+    # Ottieni l'interfaccia da utilizzare (di default eth0 se non specificato)
+    INTERFACE=$(get_interface "$2")
+
     if [ -f "$SERVICE_PID_FILE" ]; then
         PID=$(cat "$SERVICE_PID_FILE")
         if ps -p $PID > /dev/null; then
@@ -23,9 +39,9 @@ start_service() {
         return 1
     fi
 
-    echo "Avvio del servizio IDS/IPS..."
+    echo "Avvio del servizio IDS/IPS sull'interfaccia $INTERFACE..."
     # Avvia il servizio come demone in background e salva il PID nel file
-    sudo python3 "$SERVICE_SCRIPT" -i eth0 start >> "$LOG_FILE" 2>&1 &
+    sudo python3 "$SERVICE_SCRIPT" -i "$INTERFACE" start >> "$LOG_FILE" 2>&1 &
     echo $! > "$SERVICE_PID_FILE"  # Salva il PID del processo
     echo "Servizio avviato in background. I log sono disponibili in $LOG_FILE."
     echo "Se vuoi seguire il traffico di rete digita tail -f /tmp/openwrt-ids-ips.log"
@@ -54,13 +70,13 @@ stop_service() {
 
 case "$1" in
   start)
-    start_service
+    start_service "$@"
     ;;
   stop)
     stop_service
     ;;
   *)
-    echo "Uso: $0 {start|stop}"
+    echo "Uso: $0 {start|stop} [interfaccia]"
     exit 1
     ;;
 esac

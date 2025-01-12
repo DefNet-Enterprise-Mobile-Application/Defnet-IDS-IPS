@@ -39,63 +39,11 @@ Requisiti:
 - ServiceManager (importato come modulo esterno)
 """
 
-import argparse
 import logging
-import os
+from core.utils import clear_log_file, parse_arguments, setup_logging
 from services.service_manager import ServiceManager
 
-def parse_arguments():
-    """
-    Analizza gli argomenti da riga di comando.
 
-    Restituisce:
-        Namespace con gli argomenti forniti dalla riga di comando.
-    """
-    parser = argparse.ArgumentParser(description="Sniffer di rete con Scapy")
-    parser.add_argument(
-        "-i", "--interface", 
-        required=True, 
-        help="Interfaccia di rete da analizzare (es. eth0, wlan0, etc.)"
-    )
-    parser.add_argument(
-        "-c", "--config", 
-        required=False, 
-        default="./rules/config_rules.json", 
-        help="Percorso al file di configurazione delle regole (default: config_rules.json)"
-    )
-    parser.add_argument(
-        "--home-net", 
-        required=False, 
-        default="192.168.1.0/24", 
-        help="Indirizzo di rete HOME_NET (es. 192.168.1.0/24, 10.0.0.0/8, singolo indirizzo IP)."
-    )
-    parser.add_argument(
-        "command", 
-        choices=["start", "stop"], 
-        help="Comando per avviare o fermare il servizio"
-    )
-    return parser.parse_args()
-
-def clear_log_file():
-    """
-    Gestisce la creazione e la pulizia del file di log.
-    
-    Il file di log è situato in '/tmp/openwrt-ids-ips.log'. Se il file esiste, viene svuotato, 
-    altrimenti viene creato un file vuoto.
-    """
-    log_file = "/tmp/openwrt-ids-ips.log"
-    try:
-        # Se il file esiste, svuotalo
-        if os.path.exists(log_file):
-            open(log_file, 'w').close()  # Svuota il file
-            logging.info(f"File di log {log_file} svuotato.")
-        else:
-            # Se il file non esiste, crealo
-            with open(log_file, 'w') as f:
-                f.write("")  # Crea un file vuoto
-            logging.info(f"File di log {log_file} creato.")
-    except Exception as e:
-        logging.error(f"Errore durante la gestione del file di log: {e}")
 
 if __name__ == "__main__":
     """
@@ -114,15 +62,22 @@ if __name__ == "__main__":
 
     # Imposta il logging
     logging.basicConfig(level=logging.INFO)
-
-    # Svuota o crea il file di log
-    clear_log_file()
+    
 
     # Inizializzazione del service manager con la configurazione
     service_manager = ServiceManager(interface, config_file)
+    logging.info("Ho inizializzato il ServiceManager!")
 
     if args.command == "start":
+        # Svuota o crea il file di log
+        clear_log_file()
         service_manager.start()
+
     elif args.command == "stop":
         # Logica per fermare il servizio, se necessario
+        clear_log_file()
         logging.info("Comando stop ricevuto.")
+        service_manager.stop()
+    
+    elif args.command == "update-rules":
+        logging.info("#Update Rules commad !")
