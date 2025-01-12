@@ -15,7 +15,6 @@ class RuleParser:
         self.rule_manager = rule_manager
         self.rules = []
 
-
     def parse(self):
         """
         Esegue il parsing del file di configurazione JSON e carica le regole nel RuleManager.
@@ -30,8 +29,9 @@ class RuleParser:
                     src_ip = rule_data.get("src_ip", "any")
                     src_port = rule_data.get("src_port", "any")
                     dst_port = rule_data.get("dst_port", "any")
+                    direction = rule_data.get("direction", "both")  # Aggiungi la gestione del parametro direction
 
-                    # Crea un oggetto Rule
+                    # Crea un oggetto Rule con il parametro direction
                     rule = Rule(
                         rule_data["rule_id"],
                         rule_data["protocol"],
@@ -40,7 +40,8 @@ class RuleParser:
                         src_port,
                         dst_port,
                         rule_data.get("action"),
-                        rule_data.get("description")
+                        rule_data.get("description"),
+                        direction  # Passa la direzione alla regola
                     )
 
                     # Aggiungi la regola al RuleManager

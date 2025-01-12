@@ -49,10 +49,8 @@ class RuleManager:
             logging.warning(f"Protocollo {protocol} non supportato.")
 
     def get_matching_rules(self, protocol, ip):
-        logging.info(f"IP: {ip}, protocol {protocol}")
         if protocol in self.protocol_rules:
             rules = self.protocol_rules[protocol].search(ip)
-            logging.info(f"Rules : {rules}")
             if rules is None:
                 logging.debug(f"Nessuna regola trovata per protocollo {protocol} e IP {ip}.")
             else:

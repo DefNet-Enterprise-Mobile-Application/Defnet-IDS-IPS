@@ -2,18 +2,69 @@ import logging
 
 
 class RadixTreeNode:
+    """
+    Nodo base per la struttura Radix Tree.
+
+    Attributi:
+    -----------
+    children (dict): Dizionario che memorizza i nodi figli, con le chiavi come caratteri e i valori come nodi.
+    rules (list): Lista delle regole associate al nodo.
+    """
+
     def __init__(self):
         self.children = {}
         self.rules = []
 
 class RadixTree:
+    """
+    Implementazione di una Radix Tree (albero delle radici) per la gestione delle regole.
+
+    La Radix Tree è una struttura dati ottimizzata per la gestione e la ricerca di regole in base a prefissi.
+    Ogni nodo della Radix Tree può contenere più regole e i prefissi sono utilizzati per organizzare le regole.
+
+    Attributi:
+    -----------
+    root (RadixTreeNode): Il nodo radice della Radix Tree.
+
+    Metodi:
+    --------
+    insert(key, rule):
+        Inserisce una regola nella Radix Tree, utilizzando 'key' come prefisso.
+        Ottimizza l'inserimento unendo nodi quando possibile.
+
+    search(key):
+        Cerca tutte le regole che corrispondono al prefisso specificato.
+        Restituisce regole con wildcard 'any' se non trova corrispondenze esatte.
+
+    remove_rule(key, rule):
+        Rimuove una regola associata a un prefisso specifico.
+        Restituisce True se la regola è stata rimossa, False altrimenti.
+
+    display(node=None, prefix=""):
+        Stampa la struttura del Radix Tree (utile per il debug).
+
+    _collect_rules_with_wildcards(node):
+        Raccoglie tutte le regole con wildcard ('any') nel Radix Tree.
+
+    _is_wildcard_rule(rule):
+        Verifica se una regola contiene wildcard ('any').
+    """
+
     def __init__(self):
+        """
+        Inizializza la Radix Tree con un nodo radice vuoto.
+        """
         self.root = RadixTreeNode()
 
     def insert(self, key: str, rule: object):
         """
-        Inserisce una regola nel Radix Tree, utilizzando 'key' come prefisso.
+        Inserisce una regola nella Radix Tree, utilizzando 'key' come prefisso.
         Ottimizza l'inserimento unendo nodi quando possibile.
+
+        Argomenti:
+        ----------
+        key (str): Il prefisso (stringa) da utilizzare per l'inserimento della regola.
+        rule (object): La regola da inserire nella struttura dati.
         """
         current = self.root
         i = 0
@@ -35,6 +86,15 @@ class RadixTree:
         """
         Cerca tutte le regole che corrispondono al prefisso specificato.
         Restituisce regole con wildcard 'any' se non trova corrispondenze esatte.
+
+        Argomenti:
+        ----------
+        key (str): Il prefisso da cercare nel Radix Tree.
+
+        Restituisce:
+        -----------
+        list: Una lista delle regole che corrispondono al prefisso.
+              Includendo anche le regole con wildcard ('any') se non trovate corrispondenze esatte.
         """
         logging.debug(f"Inizio ricerca per il prefisso: {key}")
         current = self.root
@@ -59,6 +119,14 @@ class RadixTree:
     def _collect_rules_with_wildcards(self, node) -> list:
         """
         Raccoglie tutte le regole con wildcard ('any') nel Radix Tree.
+
+        Argomenti:
+        ----------
+        node (RadixTreeNode): Il nodo corrente da esplorare.
+
+        Restituisce:
+        -----------
+        list: Una lista di regole che contengono la wildcard ('any').
         """
         rules_with_wildcards = []
         if node.rules:
@@ -73,6 +141,14 @@ class RadixTree:
     def _is_wildcard_rule(self, rule) -> bool:
         """
         Verifica se una regola contiene wildcard ('any').
+
+        Argomenti:
+        ----------
+        rule (object): La regola da verificare.
+
+        Restituisce:
+        -----------
+        bool: True se la regola contiene una wildcard ('any'), False altrimenti.
         """
         return (
             getattr(rule, 'src_ip', None) == 'any' or
@@ -81,11 +157,18 @@ class RadixTree:
             getattr(rule, 'dst_port', None) == 'any'
         )
 
-
     def remove_rule(self, key: str, rule: object) -> bool:
         """
-        Rimuove una regola specifica associata a un prefisso, se esiste.
-        Restituisce True se la regola è stata rimossa, altrimenti False.
+        Rimuove una regola associata a un prefisso specifico.
+
+        Argomenti:
+        ----------
+        key (str): Il prefisso associato alla regola da rimuovere.
+        rule (object): La regola da rimuovere.
+
+        Restituisce:
+        -----------
+        bool: True se la regola è stata rimossa, False se non è stata trovata.
         """
         current = self.root
         i = 0
@@ -103,6 +186,11 @@ class RadixTree:
     def display(self, node=None, prefix=""):
         """
         Stampa la struttura del Radix Tree (utile per il debug).
+
+        Argomenti:
+        ----------
+        node (RadixTreeNode, opzionale): Nodo da cui partire la visualizzazione. Se non fornito, si parte dalla radice.
+        prefix (str, opzionale): Prefisso corrente durante la traversata dell'albero. Default è una stringa vuota.
         """
         if node is None:
             node = self.root

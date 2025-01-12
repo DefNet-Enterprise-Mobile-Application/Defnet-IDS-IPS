@@ -1,29 +1,33 @@
-from scapy.layers.inet import IP, TCP, UDP  # Aggiungi qui l'importazione del layer IP
-from scapy.layers.inet6 import IPv6  # Aggiungi qui l'importazione per IPv6
-
 import logging
+from scapy.layers.inet import IP, TCP, UDP
+from scapy.layers.inet6 import IPv6
 from queue import Empty
 from rule_manager.rule_manager import RuleManager
+import ipaddress
 
 class PacketAnalyzer:
-    def __init__(self, packet_queue, rule_manager):
+    def __init__(self, packet_queue, rule_manager, home_net="192.168.1.0/24", external_net="!192.168.1.0/24"):
         """
         Inizializza il PacketAnalyzer con una coda di pacchetti e un RuleManager.
-
+        
         Args:
             packet_queue (queue.Queue): La coda da cui leggere i pacchetti.
             rule_manager (RuleManager): Oggetto RuleManager che gestisce i protocolli e le regole.
+            home_net (str): Intervallo di IP per la rete locale (HOME_NET).
+            external_net (str): Intervallo di IP per gli IP esterni (EXTERNAL_NET).
         """
         self.packet_queue = packet_queue
         self.rule_manager = rule_manager
+        self.home_net = ipaddress.IPv4Network(home_net)  # Converte l'IP in un oggetto di rete
+        self.external_net = ipaddress.IPv4Network(external_net)  # Converte l'IP in un oggetto di rete
         logging.debug(f"RuleManager type: {type(self.rule_manager)}")
 
     def analyze_packet(self, packet):
         try:
             # Verifica la presenza di un layer IP (IPv4 o IPv6)
-            ip_layer = packet.getlayer(IP)  # Modifica qui per usare IP dal modulo inet
+            ip_layer = packet.getlayer(IP)
             if ip_layer is None:
-                ip_layer = packet.getlayer(IPv6)  # Modifica per usare IPv6 dal modulo inet6
+                ip_layer = packet.getlayer(IPv6)
 
             if ip_layer is None:
                 logging.warning(f"Pacchetto senza layer IP o IPv6: {packet.summary()}")
@@ -66,7 +70,15 @@ class PacketAnalyzer:
             for rule in rules:
                 logging.debug(f"Controllando la regola: {rule} per pacchetto: {packet.summary()}")
                 if rule.matches(packet):
-                    self.apply_rule(rule, packet)
+                    # Verifica se l'IP rientra in HOME_NET o EXTERNAL_NET
+                    if self.is_home_net(ip_layer.src) and rule.src_ip != "any":
+                        logging.debug(f"Pacchetto {packet.summary()} corrisponde a HOME_NET.")
+                        self.apply_rule(rule, packet)
+                    elif self.is_external_net(ip_layer.src) and rule.src_ip != "any":
+                        logging.debug(f"Pacchetto {packet.summary()} corrisponde a EXTERNAL_NET.")
+                        self.apply_rule(rule, packet)
+                    elif rule.src_ip == "any":
+                        self.apply_rule(rule, packet)
                 else:
                     logging.debug(f"Nessun match per la regola {rule} con il pacchetto {packet.summary()}")
 
@@ -87,6 +99,24 @@ class PacketAnalyzer:
             logging.info(f"Bloccato: {rule.description} per pacchetto {packet.summary()}")
         else:
             logging.debug(f"Regola applicata senza azione: {rule.description}")
+
+    def is_home_net(self, ip):
+        """
+        Verifica se l'IP è parte della rete HOME_NET.
+        """
+        try:
+            return ipaddress.IPv4Address(ip) in self.home_net
+        except ValueError:
+            return False  # Se l'IP non è valido, non è parte della rete
+
+    def is_external_net(self, ip):
+        """
+        Verifica se l'IP è parte della rete EXTERNAL_NET.
+        """
+        try:
+            return ipaddress.IPv4Address(ip) not in self.home_net
+        except ValueError:
+            return True  # Se l'IP non è valido, consideralo esterno
 
     def start(self, stop_event):
         """

@@ -5,8 +5,8 @@ from queue import Queue
 from packet_sniffer import PacketSniffer
 from packet_analyzer import PacketAnalyzer
 from rule_manager.rule_manager import RuleManager
-from rule_parser import RuleParser
-from utils import setup_logging
+from rules.rule_parser import RuleParser
+from core.utils import setup_logging
 
 class ServiceManager:
     """
