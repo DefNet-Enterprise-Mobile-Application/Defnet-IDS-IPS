@@ -40,13 +40,13 @@ class ServiceManager:
         rule_manager = RuleManager(protocol_config)  # Crea un'istanza di RuleManager
 
         # Caricamento delle regole
-        rule_parser = RuleParser(config_file, rule_manager=rule_manager)
+        rule_parser = RuleParser(config_file, rule_manager)
         rule_parser.parse()
         self.rules = rule_parser.rules
 
         # Inizializza i componenti sniffer e analyzer con le regole caricate
         self.sniffer = PacketSniffer(interface, self.packet_queue)
-        self.analyzer = PacketAnalyzer(self.packet_queue, self.rules)
+        self.analyzer = PacketAnalyzer(self.packet_queue, rule_manager)
 
     def handle_termination_signal(self, signal, frame):
         """
