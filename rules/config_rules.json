@@ -9,7 +9,7 @@
         "src_port": "any",
         "dst_port": "any",
         "action": "alert",
-        "description": ""
+        "description": "Avviso Persona estranea sta effettuando attacco DDOS semplice !"
       }
     ]
   }

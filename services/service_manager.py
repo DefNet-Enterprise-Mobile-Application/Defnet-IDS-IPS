@@ -2,12 +2,16 @@ import signal
 import logging
 from threading import Thread, Event
 from queue import Queue
+
 from services.packet_sniffer import PacketSniffer
 from services.packet_analyzer import PacketAnalyzer
+
 from rules.rule_manager import RuleManager
 from rules.rule_parser import RuleParser
+
 from core.utils import DEFAULT_PROTOCOL_CONFIG, DEFAULT_RULES_CONFIG
-from core.utils import setup_logging
+
+
 
 class ServiceManager:
     """
@@ -36,7 +40,7 @@ class ServiceManager:
         
         self.protocol_config_file = protocol_config_file or DEFAULT_PROTOCOL_CONFIG # File Path base per la configurazione dei protocolli 
 
-        self.packet_queue = Queue(maxsize=1000)
+        self.packet_queue = Queue(maxsize=2000)
         
         self.stop_event = Event()  # Evento per fermare i thread
 
