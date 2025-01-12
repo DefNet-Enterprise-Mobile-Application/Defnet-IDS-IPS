@@ -1,5 +1,6 @@
 from collections import defaultdict
 import logging
+import os
 from scapy.layers.inet import IP
 from scapy.layers.inet6 import IPv6
 from queue import Empty
@@ -24,7 +25,7 @@ class PacketAnalyzer:
         self.config_service = ConfigService(config_dir)  # Inizializza ConfigService
         self.home_net = ipaddress.IPv4Network(home_net)  # Converte l'IP in un oggetto di rete
         self.packet_history = defaultdict(list)  # Crea un dizionario per la cronologia dei pacchetti
-        logging.debug(f"RuleManager type: {type(self.rule_manager)}")
+        self.blacklist = set()  # Inizializza la blacklist
 
     def analyze_packet(self, packet):
         try:
@@ -77,15 +78,15 @@ class PacketAnalyzer:
                     # Verifica se l'IP rientra in HOME_NET o EXTERNAL_NET
                     if self.is_home_net(ip_layer.src) and rule.src_ip != "any":
                         logging.debug(f"Pacchetto {packet.summary()} corrisponde a HOME_NET.")
-                        self.apply_rule(rule, packet)
+                        self.apply_rule(rule, packet, ip_layer.src)
                     
                     elif self.is_external_net(ip_layer.src) and rule.src_ip != "any":
                         logging.debug(f"Pacchetto {packet.summary()} corrisponde a EXTERNAL_NET.")
-                        self.apply_rule(rule, packet)
+                        self.apply_rule(rule, packet, ip_layer.src)
 
                     elif rule.src_ip == "any":
                         logging.debug(f"Regola applicata senza filtro per src_ip ('any') in {packet.summary()}")
-                        self.apply_rule(rule, packet)
+                        self.apply_rule(rule, packet, ip_layer.src)
                 
                 else:
                     logging.debug(f"Nessun match per la regola {rule} con il pacchetto {packet.summary()}")
@@ -94,7 +95,7 @@ class PacketAnalyzer:
             logging.error(f"Errore durante l'analisi del pacchetto: {e}")
 
 
-    def apply_rule(self, rule, packet):
+    def apply_rule(self, rule, packet, ip_layer_src):
         """
         Applica l'azione definita da una regola al pacchetto corrispondente.
 
@@ -106,6 +107,7 @@ class PacketAnalyzer:
             logging.warning(f"Allerta: {rule.description} per pacchetto {packet.summary()}")
         elif rule.action == "block":
             logging.info(f"Bloccato: {rule.description} per pacchetto {packet.summary()}")
+            self.add_to_blacklist(ip_layer_src)
         else:
             logging.debug(f"Regola applicata senza azione: {rule.description}")
 
@@ -192,3 +194,23 @@ class PacketAnalyzer:
                 logging.error(f"Errore durante l'analisi del pacchetto: {e}")
                 continue
         logging.info("Analyzer terminato.")
+
+    def add_to_blacklist(self, ip):
+        """
+        Aggiunge un indirizzo IP alla blacklist e blocca il traffico tramite iptables.
+        """
+        if ip not in self.blacklist:
+            self.blacklist.add(ip)
+            logging.info(f"Aggiunto {ip} alla blacklist. Blocco attivo.")
+            os.system(f"sudo iptables -A INPUT -s {ip} -j DROP")
+            os.system(f"sudo iptables -A OUTPUT -d {ip} -j DROP")
+
+    def clear_blacklist(self):
+        """
+        Rimuove tutti gli IP dalla blacklist e pulisce le regole di iptables.
+        """
+        for ip in self.blacklist:
+            logging.info(f"Rimuovendo {ip} dalla blacklist.")
+            os.system(f"sudo iptables -D INPUT -s {ip} -j DROP")
+            os.system(f"sudo iptables -D OUTPUT -d {ip} -j DROP")
+        self.blacklist.clear()

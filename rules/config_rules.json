@@ -5,10 +5,10 @@
       "protocol": "ICMP",
       "src_ip": "any",
       "dst_ip": "any",
-      "direction": "out",
+      "direction": "in",
       "src_port": "any",
       "dst_port": "any",
-      "action": "alert",
+      "action": "block",
       "description": "Regola di allerta: Detenzione di pacchetti ICMP in uscita. Potenziale richiesta di ping a sistemi esterni. Questa regola è utile per monitorare il traffico di tipo ping che lascia la rete interna verso destinazioni esterne.",
       "threshold": {
         "count": 1,

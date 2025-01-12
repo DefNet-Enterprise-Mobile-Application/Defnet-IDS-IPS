@@ -120,4 +120,5 @@ class ServiceManager:
         Arresta il servizio impostando l'evento di stop per tutti i componenti.
         """
         logging.debug("Arresto del servizio...")
+        self.analyzer.clear_blacklist()
         self.stop_event.set()
