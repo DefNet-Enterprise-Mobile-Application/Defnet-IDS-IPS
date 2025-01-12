@@ -1,6 +1,6 @@
 import json
 import logging
-from rule import Rule
+from rules.rule import Rule
 
 class RuleParser:
     def __init__(self, config_file, rule_manager):

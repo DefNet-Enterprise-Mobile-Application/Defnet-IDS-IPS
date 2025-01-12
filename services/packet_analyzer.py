@@ -2,11 +2,11 @@ import logging
 from scapy.layers.inet import IP, TCP, UDP
 from scapy.layers.inet6 import IPv6
 from queue import Empty
-from rule_manager.rule_manager import RuleManager
+from rules.rule_manager import RuleManager
 import ipaddress
 
 class PacketAnalyzer:
-    def __init__(self, packet_queue, rule_manager, home_net="192.168.1.0/24", external_net="!192.168.1.0/24"):
+    def __init__(self, packet_queue, rule_manager, home_net="192.168.1.0/24"):
         """
         Inizializza il PacketAnalyzer con una coda di pacchetti e un RuleManager.
         
@@ -19,7 +19,7 @@ class PacketAnalyzer:
         self.packet_queue = packet_queue
         self.rule_manager = rule_manager
         self.home_net = ipaddress.IPv4Network(home_net)  # Converte l'IP in un oggetto di rete
-        self.external_net = ipaddress.IPv4Network(external_net)  # Converte l'IP in un oggetto di rete
+        #self.external_net = ipaddress.IPv4Network(external_net)  # Converte l'IP in un oggetto di rete
         logging.debug(f"RuleManager type: {type(self.rule_manager)}")
 
     def analyze_packet(self, packet):

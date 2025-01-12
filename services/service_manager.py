@@ -2,9 +2,9 @@ import signal
 import logging
 from threading import Thread, Event
 from queue import Queue
-from packet_sniffer import PacketSniffer
-from packet_analyzer import PacketAnalyzer
-from rule_manager.rule_manager import RuleManager
+from services.packet_sniffer import PacketSniffer
+from services.packet_analyzer import PacketAnalyzer
+from rules.rule_manager import RuleManager
 from rules.rule_parser import RuleParser
 from core.utils import setup_logging
 

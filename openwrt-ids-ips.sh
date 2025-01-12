@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Percorso al file Python (ad esempio /home/udm-root/OpenWRT-IDS-IPS/main.py)
-SERVICE_SCRIPT="/home/udm-root/Progetti/OpenWRT-IDS-IPS/core/main.py"
+SERVICE_SCRIPT="/home/udm-root/Progetti/OpenWRT-IDS-IPS/main.py"
 LOG_FILE="/tmp/openwrt-ids-ips.log"  # File di log
 SERVICE_PID_FILE="/tmp/openwrt-ids-ips.pid"  # File per memorizzare il PID
 

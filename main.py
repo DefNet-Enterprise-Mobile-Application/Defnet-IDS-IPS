@@ -42,7 +42,7 @@ Requisiti:
 import argparse
 import logging
 import os
-from service_manager import ServiceManager
+from services.service_manager import ServiceManager
 
 def parse_arguments():
     """
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     args = parse_arguments()
     interface = args.interface
     config_file = args.config
-    home_net = args.home_net
+    #home_net = args.home_net
 
     # Imposta il logging
     logging.basicConfig(level=logging.INFO)
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     clear_log_file()
 
     # Inizializzazione del service manager con la configurazione
-    service_manager = ServiceManager(interface, config_file, home_net)
+    service_manager = ServiceManager(interface, config_file)
 
     if args.command == "start":
         service_manager.start()
