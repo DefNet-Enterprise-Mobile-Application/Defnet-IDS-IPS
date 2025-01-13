@@ -52,6 +52,6 @@ class RuleParser:
 
                     # Aggiungi la regola al RuleManager
                     self.rule_manager.add_rule(rule.protocol, src_ip, rule)
-                    logging.info(f"Regola caricata: {rule}")
+                    logging.debug(f"Regola caricata: {rule}")
         except Exception as e:
             logging.error(f"Errore nel parsing del file di configurazione: {e}")

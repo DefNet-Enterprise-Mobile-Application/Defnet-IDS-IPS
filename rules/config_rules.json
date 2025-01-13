@@ -8,8 +8,8 @@
       "direction": "in",
       "src_port": "any",
       "dst_port": "any",
-      "action": "block",
-      "description": "Regola di allerta: Detenzione di pacchetti ICMP in uscita. Potenziale richiesta di ping a sistemi esterni. Questa regola è utile per monitorare il traffico di tipo ping che lascia la rete interna verso destinazioni esterne.",
+      "action": "alert",
+      "description": "Blocca pacchetti ICMP in uscita (potenziale ping a sistemi esterni).",
       "threshold": {
         "count": 1,
         "time": 10
@@ -25,26 +25,26 @@
       "src_port": "any",
       "dst_port": 80,
       "action": "alert",
-      "description": "Avviso attacco SYN flood sulla porta 80!",
-      "threshold":{
-        "count":1,
-        "time":1
+      "description": "Avvisa di un possibile attacco SYN flood sulla porta 80.",
+      "threshold": {
+        "count": 1,
+        "time": 1
       },
-      "flags":"S"
+      "flags": "S"
     },
     {
       "rule_id": "3",
       "protocol": "TCP",
       "src_ip": "any",
       "dst_ip": "any",
-      "direction": "both",
+      "direction": "in",
       "src_port": "any",
       "dst_port": "any",
-      "action": "alert",
-      "description": "Regola di allerta: Possibile scansione delle porte TCP. Questo tipo di scansione, tipica di strumenti come Nmap, è caratterizzato dall'invio di pacchetti SYN a un gran numero di porte in un breve periodo di tempo, al fine di determinare quali porte sono aperte.",
+      "action": "block",
+      "description": "Avvisa di una possibile scansione di porte TCP (tipica di strumenti come Nmap).",
       "threshold": {
-        "count": 1,
-        "time": 1
+        "count": 10,
+        "time": 10
       },
       "flags": "S"
     },
@@ -53,13 +53,13 @@
       "protocol": "TCP",
       "src_ip": "any",
       "dst_ip": "any",
-      "direction": "both",
+      "direction": "in",
       "src_port": "any",
       "dst_port": "any",
-      "action": "alert",
-      "description": "Regola di allerta: Scansione delle porte TCP (Nmap) - scansione aggressiva. Questa regola rileva scansioni di porte effettuate tramite Nmap con modalità aggressiva, caratterizzate da un numero significativamente elevato di pacchetti SYN inviati in un intervallo di tempo molto breve.",
+      "action": "block",
+      "description": "Avvisa di una scansione aggressiva delle porte TCP tramite Nmap.",
       "threshold": {
-        "count": 10,
+        "count": 100,
         "time": 2
       },
       "flags": "S"
@@ -72,10 +72,10 @@
       "direction": "both",
       "src_port": "any",
       "dst_port": "any",
-      "action": "alert",
-      "description": "Regola di allerta: Flood di pacchetti SYN, possibile attacco SYN flood. Un alto numero di pacchetti SYN in ingresso è un indicatore di potenziale attacco DoS mirato a saturare le risorse del server bersaglio.",
+      "action": "block",
+      "description": "Avvisa di un flood di pacchetti SYN, possibile attacco SYN flood.",
       "threshold": {
-        "count": 10,
+        "count": 1000,
         "time": 5
       },
       "flags": "S"
@@ -85,11 +85,11 @@
       "protocol": "UDP",
       "src_ip": "any",
       "dst_ip": "any",
-      "direction": "both",
+      "direction": "out",
       "src_port": "any",
       "dst_port": "any",
-      "action": "alert",
-      "description": "Regola di allerta: Flood di pacchetti UDP. L'invio massivo di pacchetti UDP senza una destinazione specifica può essere un indicatore di attacco DoS basato su UDP.",
+      "action": "block",
+      "description": "Avvisa di un flood di pacchetti UDP, potenziale attacco DoS UDP.",
       "threshold": {
         "count": 100,
         "time": 10
@@ -98,3 +98,4 @@
     }
   ]
 }
+

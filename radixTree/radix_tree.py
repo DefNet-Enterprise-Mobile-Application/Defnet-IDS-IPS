@@ -57,30 +57,36 @@ class RadixTree:
         self.root = RadixTreeNode()
 
     def insert(self, key: str, rule: object):
-        """
-        Inserisce una regola nella Radix Tree, utilizzando 'key' come prefisso.
-        Ottimizza l'inserimento unendo nodi quando possibile.
+            """
+            Inserisce una regola nella Radix Tree, utilizzando 'key' come prefisso.
+            Consente regole duplicate solo se l'ID della regola è diverso.
 
-        Argomenti:
-        ----------
-        key (str): Il prefisso (stringa) da utilizzare per l'inserimento della regola.
-        rule (object): La regola da inserire nella struttura dati.
-        """
-        current = self.root
-        i = 0
-        while i < len(key):
-            char = key[i]
-            # Se il nodo esiste, attraversiamo il nodo
-            if char in current.children:
-                current = current.children[char]
+            Argomenti:
+            ----------
+            key (str): Il prefisso (stringa) da utilizzare per l'inserimento della regola.
+            rule (object): La regola da inserire nella struttura dati.
+            """
+            current = self.root
+            i = 0
+            while i < len(key):
+                char = key[i]
+                if char in current.children:
+                    current = current.children[char]
+                else:
+                    new_node = RadixTreeNode()
+                    current.children[char] = new_node
+                    current = new_node
                 i += 1
-            else:
-                # Se il nodo non esiste, lo creiamo
-                new_node = RadixTreeNode()
-                current.children[char] = new_node
-                current = new_node
-                i += 1
-        current.rules.append(rule)
+
+            # Verifica duplicati basati sull'ID della regola
+            for existing_rule in current.rules:
+                if getattr(existing_rule, 'rule_id', None) == getattr(rule, 'rule_id', None):
+                    logging.info(f"Regola con ID {rule.id} già presente per il prefisso {key}. Ignorata.")
+                    return
+
+            # Aggiunge la regola se non ci sono duplicati con lo stesso ID
+            current.rules.append(rule)
+            logging.info(f"Regola aggiunta per il prefisso {key}: {rule}")
 
     def search(self, key: str) -> list:
         """

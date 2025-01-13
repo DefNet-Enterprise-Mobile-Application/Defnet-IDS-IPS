@@ -61,6 +61,9 @@ class PacketAnalyzer:
             if not rules:
                 logging.debug(f"Nessuna regola trovata per il pacchetto con protocollo {protocol_name} e IP {ip_layer.src}.")
                 return
+            
+
+            logging.debug(f"Voglio visualizzare tutte le regole che ci sono : {rules}")
 
             # Applica le regole trovate
             for rule in rules:
@@ -105,9 +108,11 @@ class PacketAnalyzer:
         """
         if rule.action == "alert":
             logging.warning(f"Allerta: {rule.description} per pacchetto {packet.summary()}")
+            return
         elif rule.action == "block":
             logging.info(f"Bloccato: {rule.description} per pacchetto {packet.summary()}")
             self.add_to_blacklist(ip_layer_src)
+            return
         else:
             logging.debug(f"Regola applicata senza azione: {rule.description}")
 

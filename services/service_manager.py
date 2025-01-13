@@ -80,6 +80,7 @@ class ServiceManager:
             frame (FrameType): Frame corrente (non utilizzato).
         """
         logging.debug("Ricevuto segnale di terminazione. Arresto del servizio...")
+        self.analyzer.clear_blacklist
         self.stop_event.set()  # Imposta l'evento per fermare i thread
 
     def start(self):
@@ -114,11 +115,12 @@ class ServiceManager:
         analyzer_thread.join()
 
         logging.info("Servizio terminato.")
+        self.analyzer.clear_blacklist
 
     def stop(self):
         """
         Arresta il servizio impostando l'evento di stop per tutti i componenti.
         """
         logging.debug("Arresto del servizio...")
-        self.analyzer.clear_blacklist()
+        self.analyzer.clear_blacklist
         self.stop_event.set()
