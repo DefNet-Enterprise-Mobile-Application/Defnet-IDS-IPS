@@ -1,16 +1,20 @@
 from collections import defaultdict
 import logging
 import os
+import time
 from scapy.layers.inet import IP
 from scapy.layers.inet6 import IPv6
 from queue import Empty
 from rules.rule_manager import RuleManager
 from rules.rule import Rule
 import ipaddress
-from services.config_service import ConfigService  # Importa ConfigService
+from services.config_service import ConfigService
+from services.notification_manager import NotificationManager  # Importa ConfigService
+from core.utils import DEFUALT_NOTIFICATION_ALERT_CONFIG
+
 
 class PacketAnalyzer:
-    def __init__(self, packet_queue, rule_manager, config_dir="./configuration", home_net="192.168.145.0/24"):
+    def __init__(self, packet_queue, rule_manager, config_dir="./configuration",home_net="192.168.145.0/24", notification_manager=None ):
         """
         Inizializza il PacketAnalyzer con una coda di pacchetti, RuleManager e configurazione.
 
@@ -20,12 +24,21 @@ class PacketAnalyzer:
             config_dir (str): Directory per i file di configurazione JSON.
             home_net (str): Intervallo di IP per la rete locale (HOME_NET).
         """
+        
         self.packet_queue = packet_queue
+        
         self.rule_manager = rule_manager
+        
         self.config_service = ConfigService(config_dir)  # Inizializza ConfigService
+        
         self.home_net = ipaddress.IPv4Network(home_net)  # Converte l'IP in un oggetto di rete
+        
         self.packet_history = defaultdict(list)  # Crea un dizionario per la cronologia dei pacchetti
+        
         self.blacklist = set()  # Inizializza la blacklist
+
+        self.notification_manager = notification_manager # Inizializza un Thread che permette di notificare il mio webSocket
+
 
     def analyze_packet(self, packet):
         try:
@@ -81,15 +94,15 @@ class PacketAnalyzer:
                     # Verifica se l'IP rientra in HOME_NET o EXTERNAL_NET
                     if self.is_home_net(ip_layer.src) and rule.src_ip != "any":
                         logging.debug(f"Pacchetto {packet.summary()} corrisponde a HOME_NET.")
-                        self.apply_rule(rule, packet, ip_layer.src)
+                        self.apply_rule(rule, packet, self.sanitize_ip(ip_layer.src))
                     
                     elif self.is_external_net(ip_layer.src) and rule.src_ip != "any":
                         logging.debug(f"Pacchetto {packet.summary()} corrisponde a EXTERNAL_NET.")
-                        self.apply_rule(rule, packet, ip_layer.src)
+                        self.apply_rule(rule, packet, self.sanitize_ip(ip_layer.src))
 
                     elif rule.src_ip == "any":
                         logging.debug(f"Regola applicata senza filtro per src_ip ('any') in {packet.summary()}")
-                        self.apply_rule(rule, packet, ip_layer.src)
+                        self.apply_rule(rule, packet, self.sanitize_ip(ip_layer.src))
                 
                 else:
                     logging.debug(f"Nessun match per la regola {rule} con il pacchetto {packet.summary()}")
@@ -105,16 +118,42 @@ class PacketAnalyzer:
         Args:
             rule (Rule): La regola che è stata corrisposta al pacchetto.
             packet: Il pacchetto che ha corrisposto alla regola.
+            ip_layer_src (str): Indirizzo IP sorgente del pacchetto.
         """
+        # Estrai informazioni di base dal pacchetto
+        packet_summary = packet.summary()
+        ip_layer_dst = getattr(packet, "dst", "unknown")
+
+        # Notifica basata sull'azione della regola
         if rule.action == "alert":
-            logging.warning(f"Allerta: {rule.description} per pacchetto {packet.summary()}")
+            logging.warning(f"Allerta: {rule.description} per pacchetto {packet_summary}")
+
+            # Creazione della notifica
+            notification = {
+                "rule_id": rule.rule_id if hasattr(rule, "rule_id") else "unknown",  # Usa 'unknown' se manca l'ID
+                "type": "alert",
+                "description": rule.description,
+                "packet": packet_summary,
+                "timestamp": time.time(),
+                "src_ip": ip_layer_src,
+                "dst_ip": ip_layer_dst,
+            }
+
+            logging.info(f"Generato alert: {notification}")
+
+            # Aggiungi l'evento al NotificationManager
+            if self.notification_manager:
+                self.notification_manager.add_event(notification)
             return
+
         elif rule.action == "block":
-            logging.info(f"Bloccato: {rule.description} per pacchetto {packet.summary()}")
+            logging.info(f"Bloccato: {rule.description} per pacchetto {packet_summary}")
             self.add_to_blacklist(ip_layer_src)
             return
+
         else:
             logging.debug(f"Regola applicata senza azione: {rule.description}")
+
 
     def _map_protocol(self, protocol):
         """
@@ -219,3 +258,25 @@ class PacketAnalyzer:
             os.system(f"sudo iptables -D INPUT -s {ip} -j DROP")
             os.system(f"sudo iptables -D OUTPUT -d {ip} -j DROP")
         self.blacklist.clear()
+
+
+    def set_notification_manager(self, notification_manager):
+        """
+        Collega il NotificationManager al PacketAnalyzer.
+
+        Args:
+            notification_manager (NotificationManager): Istanza del NotificationManager.
+        """
+        self.notification_manager = notification_manager
+
+    def sanitize_ip(self, ip):
+        """
+        Rimuove la porta da un indirizzo IP (se presente) e restituisce solo l'indirizzo.
+        
+        Args:
+            ip (str): L'indirizzo IP con la porta, nel formato 'indirizzo:porta'.
+        
+        Returns:
+            str: L'indirizzo IP senza la porta.
+        """
+        return ip.split(":")[0] if ":" in ip else ip

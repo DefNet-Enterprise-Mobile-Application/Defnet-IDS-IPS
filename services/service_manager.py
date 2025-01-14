@@ -3,13 +3,14 @@ import logging
 from threading import Thread, Event
 from queue import Queue
 
+from services.notification_manager import NotificationManager
 from services.packet_sniffer import PacketSniffer
 from services.packet_analyzer import PacketAnalyzer
 
 from rules.rule_manager import RuleManager
 from rules.rule_parser import RuleParser
 
-from core.utils import DEFAULT_PROTOCOL_CONFIG, DEFAULT_RULES_CONFIG
+from core.utils import DEFAULT_PROTOCOL_CONFIG, DEFAULT_RULES_CONFIG,DEFUALT_NOTIFICATION_ALERT_CONFIG
 
 
 
@@ -26,7 +27,7 @@ class ServiceManager:
         analyzer (PacketAnalyzer): Componente per l'analisi dei pacchetti.
         stop_event (Event): Evento per coordinare l'arresto dei thread.
     """
-    def __init__(self, interface, rules_config_file=None, protocol_config_file=None):
+    def __init__(self, interface, rules_config_file=None, protocol_config_file=None, notification_url=DEFUALT_NOTIFICATION_ALERT_CONFIG):
         """
         Inizializza il ServiceManager con l'interfaccia di rete e il file di configurazione delle regole.
 
@@ -59,6 +60,14 @@ class ServiceManager:
         rule_parser.parse()
         self.rules = rule_parser.rules
 
+
+        # Inizializza NotificationManager
+        self.notification_manager = NotificationManager(
+            notification_url=notification_url,
+            buffer_time=5,
+            max_notifications=1000
+        )
+
         # Inizializza i componenti sniffer e analyzer con le regole caricate
         self.sniffer = PacketSniffer(
             interface,
@@ -68,7 +77,8 @@ class ServiceManager:
         self.analyzer = PacketAnalyzer(
             self.packet_queue,
             rule_manager,
-            config_dir="./configuration"
+            config_dir="./configuration",
+            notification_manager=self.notification_manager
         ) # Creiamo un'istanza del Packet Analyzer 
 
     def handle_termination_signal(self, signal, frame):
@@ -101,6 +111,11 @@ class ServiceManager:
         signal.signal(signal.SIGTERM, self.handle_termination_signal)
         signal.signal(signal.SIGINT, self.handle_termination_signal)
 
+        # Aggiungi il NotificationManager al ciclo di vita
+        notification_thread = Thread(target=self.notification_manager.start, args=(self.stop_event,))
+        notification_thread.start()
+
+
         # Avvio dei thread di sniffer e analisi
         sniffer_thread = Thread(target=self.sniffer.start, args=(self.stop_event,))
         analyzer_thread = Thread(target=self.analyzer.start, args=(self.stop_event,))
@@ -108,12 +123,17 @@ class ServiceManager:
         sniffer_thread.start()
         analyzer_thread.start()
 
+        # Collegamento tra PacketAnalyzer e NotificationManager
+        #self.analyzer.set_notification_manager(self.notification_manager)
+
         logging.info("Servizio avviato. Premere Ctrl+C per terminare.")
 
         # Unisci i thread (attendiamo che finiscano)
         sniffer_thread.join()
         analyzer_thread.join()
 
+
+        # Arresta NotificationManager
         logging.info("Servizio terminato.")
         self.analyzer.clear_blacklist
 

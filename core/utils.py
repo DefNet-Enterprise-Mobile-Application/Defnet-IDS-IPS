@@ -103,3 +103,5 @@ DEFAULT_PROTOCOL_CONFIG = "./configuration/config_protocols.json"
 DEFAULT_SETTINGS_CONFIG = "./configuration/config_settings.json"
 
 DEFAULT_RULES_CONFIG = "./rules/config_rules.json"
+
+DEFUALT_NOTIFICATION_ALERT_CONFIG = "http://10.71.71.145:9000/notify-alert"
