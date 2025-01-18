@@ -58,6 +58,7 @@ class NotificationManager:
         Args:
             event (dict): Dati dell'evento da notificare.
         """
+        logging.info(f"Evento : {event}")
         with self.lock:
             self.event_queue.put(event)
             logging.debug(f"Aggiunto evento alla coda: {event}")
@@ -82,6 +83,7 @@ class NotificationManager:
         for event in events:
             # Ottieni ID della regola, usa "unknown" se mancante
             rule_id = event.get("rule_id", "unknown")
+            type_event = event.get("type","alert")
             event_summary[rule_id]["count"] += 1
             event_summary[rule_id]["description"] = event.get("description", "No description provided")
 
@@ -98,6 +100,7 @@ class NotificationManager:
             deduplicated_event = {
                 "rule_id": rule_id,
                 "description": data["description"],
+                "type":type_event,
                 "total_events": data["count"],
                 "unique_src_ips": list(data["src_ips"]),
                 "unique_dst_ips": list(data["dst_ips"]),

@@ -11,6 +11,7 @@ import ipaddress
 from services.config_service import ConfigService
 from services.notification_manager import NotificationManager  # Importa ConfigService
 from core.utils import DEFUALT_NOTIFICATION_ALERT_CONFIG
+import subprocess
 
 
 class PacketAnalyzer:
@@ -131,7 +132,7 @@ class PacketAnalyzer:
             # Creazione della notifica
             notification = {
                 "rule_id": rule.rule_id if hasattr(rule, "rule_id") else "unknown",  # Usa 'unknown' se manca l'ID
-                "type": "alert",
+                "type": "alert", # alert 
                 "description": rule.description,
                 "packet": packet_summary,
                 "timestamp": time.time(),
@@ -149,6 +150,20 @@ class PacketAnalyzer:
         elif rule.action == "block":
             logging.info(f"Bloccato: {rule.description} per pacchetto {packet_summary}")
             self.add_to_blacklist(ip_layer_src)
+
+             # Creazione della notifica
+            notification = {
+                "rule_id": rule.rule_id if hasattr(rule, "rule_id") else "unknown",  # Usa 'unknown' se manca l'ID
+                "type": "block", # warning 
+                "description": rule.description + "(Bloccato)",
+                "packet": packet_summary,
+                "timestamp": time.time(),
+                "src_ip": ip_layer_src,
+                "dst_ip": ip_layer_dst,
+            }
+            # Aggiungi l'evento al NotificationManager
+            if self.notification_manager:
+                self.notification_manager.add_event(notification)
             return
 
         else:
@@ -242,22 +257,63 @@ class PacketAnalyzer:
     def add_to_blacklist(self, ip):
         """
         Aggiunge un indirizzo IP alla blacklist e blocca il traffico tramite iptables.
+        Se l'IP è già presente, lo sostituisce rimuovendo le vecchie regole.
         """
-        if ip not in self.blacklist:
-            self.blacklist.add(ip)
-            logging.info(f"Aggiunto {ip} alla blacklist. Blocco attivo.")
-            os.system(f"sudo iptables -A INPUT -s {ip} -j DROP")
-            os.system(f"sudo iptables -A OUTPUT -d {ip} -j DROP")
+        if ip in self.blacklist:
+            logging.info(f"{ip} già nella blacklist. Sostituendo regole esistenti.")
+            self.remove_ip_from_iptables(ip)
+
+        # Aggiungi l'IP alla blacklist e crea le regole
+        self.blacklist.add(ip)
+        logging.info(f"Aggiunto {ip} alla blacklist. Blocco attivo.")
+        os.system(f"sudo iptables -A INPUT -s {ip} -j DROP")
+        os.system(f"sudo iptables -A OUTPUT -d {ip} -j DROP")
+
+    def remove_ip_from_iptables(self, ip):
+        """
+        Rimuove le regole di iptables associate a un indirizzo IP specifico.
+        """
+        try:
+            subprocess.run(["sudo", "iptables", "-D", "INPUT", "-s", ip, "-j", "DROP"], check=True)
+            subprocess.run(["sudo", "iptables", "-D", "OUTPUT", "-d", ip, "-j", "DROP"], check=True)
+            logging.info(f"Regole di iptables rimosse per {ip}.")
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Errore nella rimozione delle regole di iptables per {ip}: {e.stderr}")
+
 
     def clear_blacklist(self):
         """
         Rimuove tutti gli IP dalla blacklist e pulisce le regole di iptables.
         """
-        for ip in self.blacklist:
+        for ip in list(self.blacklist):  # Usa una copia della lista per evitare modifiche durante l'iterazione
             logging.info(f"Rimuovendo {ip} dalla blacklist.")
-            os.system(f"sudo iptables -D INPUT -s {ip} -j DROP")
-            os.system(f"sudo iptables -D OUTPUT -d {ip} -j DROP")
+            try:
+                # Rimuovi l'IP dalla regola INPUT
+                subprocess.run(
+                    ["sudo", "iptables", "-D", "INPUT", "-s", ip, "-j", "DROP"],
+                    check=True, capture_output=True, text=True
+                )
+
+                # Rimuovi l'IP dalla regola OUTPUT
+                subprocess.run(
+                    ["sudo", "iptables", "-D", "OUTPUT", "-d", ip, "-j", "DROP"],
+                    check=True, capture_output=True, text=True
+                )
+
+                logging.info(f"Rimosso {ip} con successo.")
+
+            except subprocess.CalledProcessError as e:
+                logging.error(f"Errore nella rimozione dell'IP {ip}: {e.stderr}")
+                continue
+
+            # Rimuovi l'IP dalla blacklist solo se le regole sono state eliminate
+            self.blacklist.remove(ip)
+
+        # Una volta rimossa la blacklist, pulisce completamente
         self.blacklist.clear()
+        logging.info("Blacklist pulita.")
+
+
 
 
     def set_notification_manager(self, notification_manager):

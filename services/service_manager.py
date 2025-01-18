@@ -89,7 +89,7 @@ class ServiceManager:
             signal (int): Segnale ricevuto.
             frame (FrameType): Frame corrente (non utilizzato).
         """
-        logging.debug("Ricevuto segnale di terminazione. Arresto del servizio...")
+        logging.info("Ricevuto segnale di terminazione. Arresto del servizio...")
         self.analyzer.clear_blacklist
         self.stop_event.set()  # Imposta l'evento per fermare i thread
 
@@ -103,7 +103,6 @@ class ServiceManager:
 
         Inoltre, si occupa della gestione dei segnali di terminazione.
         """
-        logging.info("Sono qui! sul serviceManager !")
         logging.info(f"Le regole parsate : {self.rules}")
         logging.debug(f"Avvio del servizio sull'interfaccia {self.interface} con il file di configurazione {self.rules_config_file}")
 
@@ -123,8 +122,6 @@ class ServiceManager:
         sniffer_thread.start()
         analyzer_thread.start()
 
-        # Collegamento tra PacketAnalyzer e NotificationManager
-        #self.analyzer.set_notification_manager(self.notification_manager)
 
         logging.info("Servizio avviato. Premere Ctrl+C per terminare.")
 
