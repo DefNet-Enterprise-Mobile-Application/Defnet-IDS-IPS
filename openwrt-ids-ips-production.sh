@@ -41,7 +41,7 @@ start_service() {
 
     echo "Avvio del servizio IDS/IPS sull'interfaccia $INTERFACE..."
     # Avvia il servizio come demone in background e salva il PID nel file
-    python3 "$SERVICE_SCRIPT" -i "$INTERFACE" start >> "$LOG_FILE" 2>&1 &
+    nohup python3 "$SERVICE_SCRIPT" -i "$INTERFACE" start >> "$LOG_FILE" 2>&1 &
     echo $! > "$SERVICE_PID_FILE"  # Salva il PID del processo
     echo "Servizio avviato in background. I log sono disponibili in $LOG_FILE."
     echo "Se vuoi seguire il traffico di rete digita tail -f /tmp/openwrt-ids-ips.log"

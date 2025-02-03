@@ -8,7 +8,7 @@
       "direction": "in",
       "src_port": "any",
       "dst_port": "any",
-      "action": "block",
+      "action": "alert",
       "description": "Blocca pacchetti ICMP in uscita (potenziale ping a sistemi esterni).",
       "threshold": {
         "count": 1,
