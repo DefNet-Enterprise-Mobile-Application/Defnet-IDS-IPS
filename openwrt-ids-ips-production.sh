@@ -6,7 +6,7 @@ LOG_FILE="/tmp/openwrt-ids-ips.log"  # File di log
 SERVICE_PID_FILE="/tmp/openwrt-ids-ips.pid"  # File per memorizzare il PID
 
 # Imposta un'interfaccia di rete predefinita (modifica se necessario)
-DEFAULT_INTERFACE="eth0"
+DEFAULT_INTERFACE="phy1-ap0"
 
 # Funzione per gestire gli argomenti passati allo script
 get_interface() {
