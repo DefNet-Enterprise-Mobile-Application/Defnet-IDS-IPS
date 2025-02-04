@@ -2,7 +2,7 @@ from collections import defaultdict
 import logging
 import os
 import time
-from scapy.layers.inet import IP
+from scapy.layers.inet import IP,UDP
 from scapy.layers.inet6 import IPv6
 from queue import Empty
 from rules.rule_manager import RuleManager
@@ -43,6 +43,11 @@ class PacketAnalyzer:
 
     def analyze_packet(self, packet):
         try:
+            if packet.haslayer(UDP):
+                udp_layer = packet.getlayer(UDP)
+            if udp_layer.dport == 50021 or udp_layer.sport == 50021 or udp_layer.dport == 50042 or udp_layer.dport == 50045:
+                logging.debug(f"Pacchetto UDP verso porta 50021 trovato e ignorato: {packet.summary()}")
+                return  # Ignora pacchetto se destinato alla porta 50021
             # Verifica la presenza di un layer IP (IPv4 o IPv6)
             ip_layer = packet.getlayer(IP)
             if ip_layer is None:
