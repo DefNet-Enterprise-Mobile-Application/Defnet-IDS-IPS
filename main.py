@@ -61,7 +61,7 @@ if __name__ == "__main__":
     #home_net = args.home_net
 
     # Imposta il logging
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     
 
     # Inizializzazione del service manager con la configurazione
