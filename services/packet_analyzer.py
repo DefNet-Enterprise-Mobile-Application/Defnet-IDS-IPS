@@ -43,34 +43,28 @@ class PacketAnalyzer:
 
     def analyze_packet(self, packet):
         try:
+            # Controlla se il pacchetto ha il layer UDP
             if packet.haslayer(UDP):
                 udp_layer = packet.getlayer(UDP)
-            if udp_layer.dport == 50021 or udp_layer.sport == 50021 or udp_layer.dport == 50042 or udp_layer.dport == 50045:
-                logging.debug(f"Pacchetto UDP verso porta 50021 trovato e ignorato: {packet.summary()}")
-                return  # Ignora pacchetto se destinato alla porta 50021
-            # Verifica la presenza di un layer IP (IPv4 o IPv6)
-            ip_layer = packet.getlayer(IP)
-            if ip_layer is None:
-                ip_layer = packet.getlayer(IPv6)
 
+                # Scarta pacchetti DHCP (porte 67, 68) e DNS (porta 53)
+                if udp_layer.sport in [67, 68, 53] or udp_layer.dport in [67, 68, 53]:
+                    logging.debug(f"Pacchetto UDP su porta {udp_layer.sport}/{udp_layer.dport} ignorato: {packet.summary()}")
+                    return  # Esce senza analizzare il pacchetto
+
+            # Controlla se il pacchetto ha un layer IP (IPv4 o IPv6)
+            ip_layer = packet.getlayer(IP) or packet.getlayer(IPv6)
             if ip_layer is None:
                 logging.warning(f"Pacchetto senza layer IP o IPv6: {packet.summary()}")
                 return  # Ignora pacchetto se non ha layer IP o IPv6
 
-            # Log dettagliato per il protocollo
-            if isinstance(ip_layer, IP):
-                protocol = ip_layer.proto  # protocollo per IPv4
-            elif isinstance(ip_layer, IPv6):
-                protocol = ip_layer.nh  # protocollo per IPv6
+            # Identifica il protocollo del pacchetto
+            protocol = ip_layer.proto if isinstance(ip_layer, IP) else ip_layer.nh
+            protocol_name = self._map_protocol(protocol)
 
-            logging.debug(f"Protocollo del pacchetto: {protocol}")
+            logging.debug(f"Protocollo del pacchetto: {protocol_name}")
 
-            # Mappatura numeri di protocollo ai nomi
-            protocol_name = self._map_protocol(protocol=protocol)
-
-            logging.debug(f"Protocollo del pacchetto identificato: {protocol_name}")
-
-            # Cerca le regole per il protocollo
+            # Ottieni le regole corrispondenti al protocollo
             if isinstance(self.rule_manager, RuleManager):
                 rules = self.rule_manager.get_matching_rules(protocol_name, ip_layer.src)
             else:
@@ -80,34 +74,30 @@ class PacketAnalyzer:
             if not rules:
                 logging.debug(f"Nessuna regola trovata per il pacchetto con protocollo {protocol_name} e IP {ip_layer.src}.")
                 return
-            
 
-            logging.debug(f"Voglio visualizzare tutte le regole che ci sono : {rules}")
+            logging.debug(f"Regole trovate: {rules}")
 
-            # Applica le regole trovate
+            # Applica le regole
             for rule in rules:
-                logging.debug(f"Controllando la regola: {rule} per pacchetto: {packet.summary()}")
+                logging.debug(f"Verifica regola: {rule} per pacchetto: {packet.summary()}")
 
-                # Verifica la direzione del pacchetto
+                # Controlla la direzione del pacchetto
                 if not self.check_direction(rule, ip_layer.src, ip_layer.dst):
-                    logging.debug(f"Direzione non corrispondente per la regola {rule} con il pacchetto {packet.summary()}")
-                    continue  # Ignora pacchetto se la direzione non corrisponde alla regola
-                else:
-                    logging.debug(f"Direzione corrispondente per la regola {rule} con il pacchetto {packet.summary()}")
+                    logging.debug(f"Direzione non corrispondente per la regola {rule}")
+                    continue  # Ignora pacchetto se la direzione non corrisponde
 
-                # Procedi a verificare e applicare la regola se c'è una corrispondenza
+                # Controllo delle regole
                 if Rule.match_rule(rule, packet, self.packet_history):
-                    # Verifica se l'IP rientra in HOME_NET o EXTERNAL_NET
                     if self.is_home_net(ip_layer.src) and rule.src_ip != "any":
-                        logging.debug(f"Pacchetto {packet.summary()} corrisponde a HOME_NET.")
+                        logging.debug(f"Pacchetto corrisponde a HOME_NET.")
                         self.apply_rule(rule, packet, self.sanitize_ip(ip_layer.src))
                     
                     elif self.is_external_net(ip_layer.src) and rule.src_ip != "any":
-                        logging.debug(f"Pacchetto {packet.summary()} corrisponde a EXTERNAL_NET.")
+                        logging.debug(f"Pacchetto corrisponde a EXTERNAL_NET.")
                         self.apply_rule(rule, packet, self.sanitize_ip(ip_layer.src))
 
                     elif rule.src_ip == "any":
-                        logging.debug(f"Regola applicata senza filtro per src_ip ('any') in {packet.summary()}")
+                        logging.debug(f"Regola applicata senza filtro per src_ip ('any').")
                         self.apply_rule(rule, packet, self.sanitize_ip(ip_layer.src))
                 
                 else:
@@ -115,6 +105,7 @@ class PacketAnalyzer:
 
         except Exception as e:
             logging.error(f"Errore durante l'analisi del pacchetto: {e}")
+
 
 
     def apply_rule(self, rule, packet, ip_layer_src):
