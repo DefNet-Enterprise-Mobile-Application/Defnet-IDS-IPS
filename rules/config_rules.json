@@ -12,7 +12,7 @@
       "description": "Blocca pacchetti ICMP in uscita (potenziale ping a sistemi esterni).",
       "threshold": {
         "count": 1,
-        "time": 10
+        "time": 5
       },
       "flags": []
     },
