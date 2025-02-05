@@ -79,22 +79,6 @@
         "time": 5
       },
       "flags": "S"
-    },
-    {
-      "rule_id": "6",
-      "protocol": "UDP",
-      "src_ip": "any",
-      "dst_ip": "any",
-      "direction": "out",
-      "src_port": "any",
-      "dst_port": "any",
-      "action": "alert",
-      "description": "Avvisa di un flood di pacchetti UDP, potenziale attacco DoS UDP.",
-      "threshold": {
-        "count": 100,
-        "time": 10
-      },
-      "flags": []
     }
   ]
 }
