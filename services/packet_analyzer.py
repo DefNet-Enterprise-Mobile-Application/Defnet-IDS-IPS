@@ -48,7 +48,7 @@ class PacketAnalyzer:
                 udp_layer = packet.getlayer(UDP)
 
                 # Scarta pacchetti DHCP (porte 67, 68) e DNS (porta 53)
-                if udp_layer.sport in [67, 68, 53] or udp_layer.dport in [67, 68, 53]:
+                if udp_layer.sport in [67, 68, 53, 553] or udp_layer.dport in [67, 68, 53, 553]:
                     logging.debug(f"Pacchetto UDP su porta {udp_layer.sport}/{udp_layer.dport} ignorato: {packet.summary()}")
                     return  # Esce senza analizzare il pacchetto
 
